@@ -7,6 +7,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.DialogFragment;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
@@ -33,6 +34,13 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.Volley;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,13 +59,16 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
     static int [] datum;
+    @SuppressLint("StaticFieldLeak")
     static TextView pocetniDatumSelektor;
+    @SuppressLint("StaticFieldLeak")
     static TextView krajnjiDatumSelektor;
     static int selektor;
 
@@ -99,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
     int animationDuration = 500;
 
+    @SuppressLint("StaticFieldLeak")
     public class PozivZaListuLokacija extends AsyncTask <String, Void, String>{
         @Override
         protected String doInBackground(String... strings) {
@@ -143,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     public class PozivZaListuAlergena extends AsyncTask <String, Void, String>{
         @Override
         protected String doInBackground(String... strings) {
@@ -187,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     public class PozivZaIDPolena extends AsyncTask <String, Void, String>{
         @Override
         protected String doInBackground(String... strings) {
@@ -265,6 +279,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     public class PozivZaKoncentraciju extends AsyncTask <String, Void, String>{
 
         @Override
@@ -348,6 +363,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     public class PozivZaTrend extends AsyncTask<String, Void, String>{
         @Override
         protected String doInBackground(String... strings) {
@@ -430,7 +446,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public class Rezultat {
+    public static class Rezultat {
         String datum;
         String alergen;
         int value;
@@ -538,7 +554,7 @@ public class MainActivity extends AppCompatActivity {
         List datesInRange = new ArrayList<>();
         Calendar calendar = getCalendarWithoutTime(startDate);
         Calendar endCalendar = getCalendarWithoutTime(endDate);
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        @SuppressLint("SimpleDateFormat") DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 
         while (calendar.before(endCalendar)) {
             Date result = calendar.getTime();
@@ -570,6 +586,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onCreateOptionsMenu(menu);
     }
 
+    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         super.onOptionsItemSelected(item);
@@ -595,7 +612,6 @@ public class MainActivity extends AppCompatActivity {
         int year = c.get(Calendar.YEAR);
         int month = c.get(Calendar.MONTH);
         int day = c.get(Calendar.DAY_OF_MONTH);
-        String trenutniDatum = year + "-" + String.format("%02d", month+1) + "-" + String.format("%02d", day);
         datum = new int[]{year, month, day};
         listaRezultata = new ArrayList<Rezultat>();
         listaRezultataZaTrend = new ArrayList<Rezultat>();
@@ -610,7 +626,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         okDugme = findViewById(R.id.okButton);
-        okDugme.setOnClickListener(view -> click2(view));
+        okDugme.setOnClickListener(this::click2);
 
         prozorZaIspisListe =findViewById(R.id.prozorZaIspisListe);
 
@@ -618,7 +634,6 @@ public class MainActivity extends AppCompatActivity {
 
         pocetniDatumSelektor = findViewById(R.id.datumPocetni);
         pocetniDatumSelektor.setText("ПОЧЕТНИ ДАТУМ");
-        //pocetniDatumSelektor.setText(trenutniDatum);
         pocetniDatumSelektor.setOnClickListener(view -> {
             showDatePickerDialog(view);
             selektor = 1;
@@ -626,7 +641,6 @@ public class MainActivity extends AppCompatActivity {
 
         krajnjiDatumSelektor = findViewById(R.id.datumKrajnji);
         krajnjiDatumSelektor.setText("КРАЈЊИ ДАТУМ");
-        //krajnjiDatumSelektor.setText(trenutniDatum);
         krajnjiDatumSelektor.setOnClickListener(view -> {
             showDatePickerDialog(view);
             selektor = 2;
@@ -640,17 +654,6 @@ public class MainActivity extends AppCompatActivity {
 
         PozivZaListuAlergena pozivAlergena = new PozivZaListuAlergena();
         pozivAlergena.execute(urlZaAlergene);
-
-        prozorZaIspisListe.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                try {
-                    click3(i);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
 
         spinnerLokacija.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -668,7 +671,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
         spinnerAlergena.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
@@ -686,6 +688,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        prozorZaIspisListe.setOnItemClickListener((adapterView, view, i, l) -> {
+            try {
+                click3(i);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public void click(View v) throws ParseException{
@@ -703,7 +712,7 @@ public class MainActivity extends AppCompatActivity {
             alert("Изаберите крајњи датум!");
         }
         else{
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+            @SuppressLint("SimpleDateFormat") DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
             Date prvi = null;
             Date zadnji = null;
             try {
@@ -712,6 +721,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (ParseException e) {
                 e.printStackTrace();
             }
+            assert prvi != null;
             if(prvi.after(zadnji)){
                 alert("Крајњи датум не може бити пре почетног!");
             }
@@ -766,10 +776,10 @@ public class MainActivity extends AppCompatActivity {
         else{
             gotovoPopunjavanjeTrenda=false;
             listaRezultataZaTrend.clear();
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+            @SuppressLint("SimpleDateFormat") DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
             String startniDatum = listaRezultata.get(i).getDatum();
             Calendar c = Calendar.getInstance();
-            c.setTime(df.parse(startniDatum));
+            c.setTime(Objects.requireNonNull(df.parse(startniDatum)));
             c.add(Calendar.DATE, 7);
             krajnjiDatumZaTrend = df.format(c.getTime());
             Date prvi = df.parse(startniDatum);
