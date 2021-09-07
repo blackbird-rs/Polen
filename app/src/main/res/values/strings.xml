@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Demo 3</string>
+    <string name="button_text">GO!</string>
+    <string name="ok_button_text">OK</string>
+</resources>

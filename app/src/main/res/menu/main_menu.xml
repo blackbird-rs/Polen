@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:title="Poleni"
+        android:id="@+id/poleni"></item>
+    <item android:title="About App"
+        android:id="@+id/about_app"></item>
+    <item android:title="About Dev"
+        android:id="@+id/about_dev"></item>
+</menu>
