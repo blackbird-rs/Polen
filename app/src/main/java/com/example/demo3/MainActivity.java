@@ -1,22 +1,17 @@
 package com.example.demo3;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.DialogFragment;
-import androidx.recyclerview.widget.RecyclerView;
 
 import android.annotation.SuppressLint;
+import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -24,7 +19,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Adapter;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -32,14 +27,7 @@ import android.widget.DatePicker;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.Volley;
+import android.widget.Toolbar;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -49,7 +37,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -102,10 +89,7 @@ public class MainActivity extends AppCompatActivity {
     List<Rezultat> listaRezultata;
     List<Rezultat> listaRezultataZaTrend;
     boolean gotovoPopunjavanje = false;
-    boolean gotovoPopunjavanjeTrenda = false;
 
-    String identifikatorZaListu = "0";
-    String identifikatorZaTrend = "1";
     String krajnjiDatumZaTrend = "";
 
     int animationDuration = 500;
@@ -206,8 +190,6 @@ public class MainActivity extends AppCompatActivity {
         protected String doInBackground(String... strings) {
             try {
 
-                String identifikator = strings[2];
-
                 URL url = new URL(strings[0]);
                 String datum = strings[1];
 
@@ -225,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
                     data = reader.read();
                 }
 
-                return result + datum + identifikator;
+                return result + datum;
             } catch (IOException e) {
                 e.printStackTrace();
                 return null;
@@ -238,40 +220,22 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
-
-            String identifikator = result.substring(result.length()-1);
-            String datum = result.substring(result.length()-11, result.length()-1);
-            result = result.substring(0, result.length()-11);
+            String datum = result.substring(result.length()-10, result.length());
+            result = result.substring(0, result.length()-10);
             try {
                 JSONObject jsonObject = new JSONObject(result);
                 JSONArray rezultati = jsonObject.getJSONArray("results");
-                if(identifikator.equals(identifikatorZaListu)){
-                    if(rezultati.length()>0){
-                        JSONObject rezultat = rezultati.getJSONObject(0);
-                        int pollenID = rezultat.getInt("id");
-                        String url = urlZaPolenPT1 + izabranAlergenID + urlZaPolenPT2 + pollenID;
-                        PozivZaKoncentraciju poziv = new PozivZaKoncentraciju();
-                        poziv.execute(url, datum);
-                    }
-                    else if(rezultati.length()<=0 ){
-                        String url = urlZaPolenPT1 + izabranAlergenID + urlZaPolenPT2 + 0;
-                        PozivZaKoncentraciju poziv = new PozivZaKoncentraciju();
-                        poziv.execute(url, datum);
-                    }
+                if(rezultati.length()>0){
+                    JSONObject rezultat = rezultati.getJSONObject(0);
+                    int pollenID = rezultat.getInt("id");
+                    String url = urlZaPolenPT1 + izabranAlergenID + urlZaPolenPT2 + pollenID;
+                    PozivZaKoncentraciju poziv = new PozivZaKoncentraciju();
+                    poziv.execute(url, datum);
                 }
-                else if(identifikator.equals(identifikatorZaTrend)){
-                    if(rezultati.length()>0){
-                        JSONObject rezultat = rezultati.getJSONObject(0);
-                        int pollenID = rezultat.getInt("id");
-                        String url = urlZaPolenPT1 + izabranAlergenID + urlZaPolenPT2 + pollenID;
-                        PozivZaTrend poziv = new PozivZaTrend();
-                        poziv.execute(url, datum);
-                    }
-                    else if(rezultati.length()<=0 ){
-                        String url = urlZaPolenPT1 + izabranAlergenID + urlZaPolenPT2 + 0;
-                        PozivZaTrend poziv = new PozivZaTrend();
-                        poziv.execute(url, datum);
-                    }
+                else if(rezultati.length()<=0 ){
+                    String url = urlZaPolenPT1 + izabranAlergenID + urlZaPolenPT2 + 0;
+                    PozivZaKoncentraciju poziv = new PozivZaKoncentraciju();
+                    poziv.execute(url, datum);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -354,89 +318,6 @@ public class MainActivity extends AppCompatActivity {
                     else{
                         rezultat = new Rezultat(datum, izabranAlergenIme, vrednost, prazan);
                         listaRezultata.add(rezultat);
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-            super.onPostExecute(result);
-        }
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    public class PozivZaTrend extends AsyncTask<String, Void, String>{
-        @Override
-        protected String doInBackground(String... strings) {
-            try {
-                String prazanUrl = "http://polen.sepa.gov.rs/api/opendata/concentrations/?allergen=" + izabranAlergenID + "&pollen=0";
-                String result = "";
-                String datum = strings[1];
-
-                if(strings[0].equals(prazanUrl)){
-                    result="prazanURL" + datum;
-                    return result;
-                }
-
-                URL url = new URL(strings[0]);
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.connect();
-                InputStream inputStream = urlConnection.getInputStream();
-                InputStreamReader reader = new InputStreamReader(inputStream);
-
-                int data = reader.read();
-
-                while(data!=-1){
-                    char current = (char) data;
-                    result += current;
-                    data = reader.read();
-                }
-
-                return result + datum;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            String urlProvera = result.substring(0, 9);
-            String datum = result.substring(result.length() - 10);
-            if(urlProvera.equals("prazanURL")){
-                Rezultat rezultat;
-                if(datum.equals(krajnjiDatumZaTrend)){
-                    gotovoPopunjavanjeTrenda = true;
-                    rezultat = new Rezultat(datum, izabranAlergenIme, -1, true);
-                    listaRezultataZaTrend.add(rezultat);
-                }
-                else{
-                    rezultat = new Rezultat(datum, izabranAlergenIme, -1, true);
-                    listaRezultataZaTrend.add(rezultat);
-                }
-            }
-            else{
-                result = result.substring(0, result.length()-10);
-                try {
-                    JSONObject jsonObject = new JSONObject(result);
-                    JSONArray rezultati = jsonObject.getJSONArray("results");
-                    int vrednost=0;
-                    boolean prazan;
-                    Rezultat rezultat;
-                    if(rezultati.length() <= 0){
-                        prazan=true;
-                    }
-                    else{
-                        vrednost = rezultati.getJSONObject(0).getInt("value");
-                        prazan=false;
-                    }
-                    if(datum.equals(krajnjiDatumZaTrend)){
-                        gotovoPopunjavanjeTrenda = true;
-                        rezultat = new Rezultat(datum, izabranAlergenIme, vrednost, prazan);
-                        listaRezultataZaTrend.add(rezultat);
-                    }
-                    else{
-                        rezultat = new Rezultat(datum, izabranAlergenIme, vrednost, prazan);
-                        listaRezultataZaTrend.add(rezultat);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -608,6 +489,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        androidx.appcompat.widget.Toolbar myToolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(myToolbar);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayShowTitleEnabled(false);
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        );
+
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
         int month = c.get(Calendar.MONTH);
@@ -718,6 +607,11 @@ public class MainActivity extends AppCompatActivity {
             try {
                 prvi = df.parse(izabranPocetniDatum);
                 zadnji = df.parse(izabranKrajnjiDatum);
+                Calendar c = Calendar.getInstance();
+                c.setTime(zadnji);
+                c.add(Calendar.DATE, 7);
+                krajnjiDatumZaTrend = df.format(c.getTime());
+                zadnji = df.parse(krajnjiDatumZaTrend);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -727,7 +621,6 @@ public class MainActivity extends AppCompatActivity {
             }
             else{
                 zamraciGlavniUI();
-                //okDugme.setEnabled(false);
                 prikaziSekundarniUI();
                 List datumi = getDatesBetween(prvi, zadnji);
 
@@ -735,7 +628,7 @@ public class MainActivity extends AppCompatActivity {
                     PozivZaIDPolena poziv1 = new PozivZaIDPolena();
                     String url = urlZaListuKoncentracijaPT1 + izabranaLokacijaID + urlZaListuKoncentracijaPT2 + datumi.get(i).toString();
                     String datumString = datumi.get(i).toString();
-                    poziv1.execute(url, datumString, identifikatorZaListu);
+                    poziv1.execute(url, datumString);
                 }
                 int delay = 0;
                 int period = 500;
@@ -774,59 +667,26 @@ public class MainActivity extends AppCompatActivity {
             alert("Није могуће проверити тренд пошто нема тренутних података!");
         }
         else{
-            gotovoPopunjavanjeTrenda=false;
-            listaRezultataZaTrend.clear();
-            @SuppressLint("SimpleDateFormat") DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-            String startniDatum = listaRezultata.get(i).getDatum();
-            Calendar c = Calendar.getInstance();
-            c.setTime(Objects.requireNonNull(df.parse(startniDatum)));
-            c.add(Calendar.DATE, 7);
-            krajnjiDatumZaTrend = df.format(c.getTime());
-            Date prvi = df.parse(startniDatum);
-            Date zadnji = df.parse(krajnjiDatumZaTrend);
-            List datumi = getDatesBetween(prvi, zadnji);
-
-            for (int j = 0; j < datumi.size(); j++) {
-                PozivZaIDPolena poziv1 = new PozivZaIDPolena();
-                String url = urlZaListuKoncentracijaPT1 + izabranaLokacijaID + urlZaListuKoncentracijaPT2 + datumi.get(j).toString();
-                String datumString = datumi.get(j).toString();
-                poziv1.execute(url, datumString, identifikatorZaTrend);
-            }
-            int delay = 0;
-            int period = 500;
-            Timer timer = new Timer();
-            timer.scheduleAtFixedRate(new TimerTask()
-            {
-                public void run()
-                {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if(gotovoPopunjavanjeTrenda){
-                                int vrednostZaStampu = 0;
-                                for (int j = 1; j < listaRezultataZaTrend.size(); j++) {
-                                    int vrednost = listaRezultataZaTrend.get(j).getValue();
-                                    if(vrednost == -1){
-                                        vrednost = 0;
-                                    }
-                                    vrednostZaStampu += vrednost;
-                                }
-                                vrednostZaStampu = vrednostZaStampu/(listaRezultataZaTrend.size()-1);
-                                if(vrednostZaStampu>listaRezultataZaTrend.get(0).getValue()){
-                                    alert("Концентрација је у порасту у наредних 7 дана!");
-                                }
-                                else if(vrednostZaStampu<listaRezultataZaTrend.get(0).getValue()){
-                                    alert("Концентрација је у опадању у наредних 7 дана!");
-                                }
-                                else{
-                                    alert("Концентрација мирује у наредних 7 дана!");
-                                }
-                                timer.cancel();
-                            }
-                        }
-                    });
+            double doubleZaStampu = 0;
+            int vrednost;
+            for (int j = i+1; j <= i+7; j++) {
+                vrednost = listaRezultata.get(j).getValue();
+                if(vrednost==-1){
+                    vrednost=0;
                 }
-            }, delay, period);
+                doubleZaStampu += vrednost;
+            }
+            doubleZaStampu = doubleZaStampu/7;
+            int vrednostZaStampu = (int) Math.round(doubleZaStampu);
+            if(vrednostZaStampu>listaRezultata.get(i).getValue()){
+                alert("Концентрација је у порасту у наредних 7 дана!");
+            }
+            else if(vrednostZaStampu<listaRezultata.get(i).getValue()){
+                alert("Концентрација је у опадању у наредних 7 дана!");
+            }
+            else{
+                alert("Концентрација мирује у наредних 7 дана!");
+            }
         }
     }
 
@@ -855,7 +715,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void popuniListu(String [] items){
-        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, items);
+        String[] newItems = new String[items.length-7];
+        for (int i = 0; i < newItems.length; i++) {
+            newItems[i] = items[i];
+        }
+        for (int i = 0; i < listaRezultata.size(); i++) {
+            Log.d("TAG", listaRezultata.get(i).toString());
+        }
+        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, newItems);
         prozorZaIspisListe.setAdapter(adapter);
     }
 
