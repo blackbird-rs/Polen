@@ -94,6 +94,9 @@ public class MainActivity extends AppCompatActivity {
 
     int animationDuration = 500;
 
+    boolean popunjeneLokacije;
+    boolean popunjeniAlergeni;
+
     @SuppressLint("StaticFieldLeak")
     public class PozivZaListuLokacija extends AsyncTask <String, Void, String>{
         @Override
@@ -132,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
                     lokacije[i] = jsonArray.getJSONObject(i).getString("name");
                 }
                 popuniSpinner(spinnerLokacija, lokacije);
+                popunjeneLokacije = true;
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -177,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
                     alergeni[i] = jsonArray.getJSONObject(i).getString("localized_name");
                 }
                 popuniSpinner(spinnerAlergena, alergeni);
+                popunjeniAlergeni = true;
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -285,7 +290,7 @@ public class MainActivity extends AppCompatActivity {
             String datum = result.substring(result.length() - 10);
             if(urlProvera.equals("prazanURL")){
                 Rezultat rezultat;
-                if(datum.equals(izabranKrajnjiDatum)){
+                if(datum.equals(krajnjiDatumZaTrend)){
                     gotovoPopunjavanje = true;
                     rezultat = new Rezultat(datum, izabranAlergenIme, -1, true);
                     listaRezultata.add(rezultat);
@@ -310,7 +315,7 @@ public class MainActivity extends AppCompatActivity {
                         vrednost = rezultati.getJSONObject(0).getInt("value");
                         prazan=false;
                     }
-                    if(datum.equals(izabranKrajnjiDatum)){
+                    if(datum.equals(krajnjiDatumZaTrend)){
                         gotovoPopunjavanje = true;
                         rezultat = new Rezultat(datum, izabranAlergenIme, vrednost, prazan);
                         listaRezultata.add(rezultat);
@@ -505,6 +510,9 @@ public class MainActivity extends AppCompatActivity {
         listaRezultata = new ArrayList<Rezultat>();
         listaRezultataZaTrend = new ArrayList<Rezultat>();
 
+        popunjeneLokacije = false;
+        popunjeniAlergeni = false;
+
         goDugme = findViewById(R.id.goDugme);
         goDugme.setOnClickListener(view -> {
             try {
@@ -535,8 +543,14 @@ public class MainActivity extends AppCompatActivity {
             selektor = 2;
         });
 
+        String[] tempLok = new String[]{"АПАТИН"};
+        izabranaLokacijaID = 29;
+        String[] tempAlg = new String[]{"ЈАВОР"};
+        izabranAlergenID = 1;
         spinnerLokacija = findViewById(R.id.lokacije);
         spinnerAlergena = findViewById(R.id.alergeni);
+        popuniSpinner(spinnerLokacija, tempLok);
+        popuniSpinner(spinnerAlergena, tempAlg);
 
         PozivZaListuLokacija pozivLokacije = new PozivZaListuLokacija();
         pozivLokacije.execute(urlZaLokacije);
@@ -544,38 +558,55 @@ public class MainActivity extends AppCompatActivity {
         PozivZaListuAlergena pozivAlergena = new PozivZaListuAlergena();
         pozivAlergena.execute(urlZaAlergene);
 
-        spinnerLokacija.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                try {
-                    izabranaLokacijaID = lokacijeJSON.getJSONObject(i).getInt("id");
+        int delay = 0;
+        int period = 50;
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask()
+        {
+            public void run()
+            {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if(popunjeneLokacije == true && popunjeniAlergeni == true){
+                            spinnerLokacija.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                                    try {
+                                        izabranaLokacijaID = lokacijeJSON.getJSONObject(i).getInt("id");
 
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                @Override
+                                public void onNothingSelected(AdapterView<?> adapterView) {
+
+                                }
+                            });
+                            spinnerAlergena.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                                    try {
+                                        izabranAlergenID = alergeniJSON.getJSONObject(i).getInt("id");
+                                        izabranAlergenIme = alergeniJSON.getJSONObject(i).getString("localized_name");
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                @Override
+                                public void onNothingSelected(AdapterView<?> adapterView) {
+
+                                }
+                            });
+                            timer.cancel();
+                        }
+                    }
+                });
             }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
-        spinnerAlergena.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                try {
-                    izabranAlergenID = alergeniJSON.getJSONObject(i).getInt("id");
-                    izabranAlergenIme = alergeniJSON.getJSONObject(i).getString("localized_name");
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
+        }, delay, period);
 
         prozorZaIspisListe.setOnItemClickListener((adapterView, view, i, l) -> {
             try {
@@ -589,6 +620,9 @@ public class MainActivity extends AppCompatActivity {
     public void click(View v) throws ParseException{
         gotovoPopunjavanje=false;
         listaRezultata.clear();
+        String [] prazna_lista = new String[]{"Обрада захтева..."};
+        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, prazna_lista);
+        prozorZaIspisListe.setAdapter(adapter);
         izabranPocetniDatum = pocetniDatumSelektor.getText().toString();
         izabranKrajnjiDatum = krajnjiDatumSelektor.getText().toString();
         if(izabranPocetniDatum.equals("ПОЧЕТНИ ДАТУМ") && izabranKrajnjiDatum.equals("КРАЈЊИ ДАТУМ")){
@@ -692,23 +726,17 @@ public class MainActivity extends AppCompatActivity {
 
     public void stampa(){
         rezultat = "";
-        if(!gotovoPopunjavanje){
-            rezultat = "PROCESSING THE REQUEST";
-            //SMISLI KAKO DA PRIKAZES OVO!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        }
-        else{
-            for (int i = 0; i < listaRezultata.size(); i++) {
-                Rezultat result = listaRezultata.get(i);
-                if(result.getValue() == -1){
-                    rezultat += (result.getDatum() + " За дати датум и локацију не постоје очитавања \n");
+        for (int i = 0; i < listaRezultata.size(); i++) {
+            Rezultat result = listaRezultata.get(i);
+            if(result.getValue() == -1){
+                rezultat += (result.getDatum() + " За дати датум и локацију не постоје очитавања \n");
+            }
+            else{
+                if(result.getPrazan()){
+                    rezultat += ("На дан " + result.getDatum() + " не постоји податак за дати алерген \n");
                 }
                 else{
-                    if(result.getPrazan()){
-                        rezultat += ("На дан " + result.getDatum() + " не постоји податак за дати алерген \n");
-                    }
-                    else{
-                        rezultat += ("Концентрација алергена " + result.getAlergen() + " на дан " + result.getDatum() + " износи " + result.getValue() + "\n");
-                    }
+                    rezultat += ("Концентрација алергена " + result.getAlergen() + " на дан " + result.getDatum() + " износи " + result.getValue() + "\n");
                 }
             }
         }
