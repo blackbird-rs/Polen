@@ -519,7 +519,7 @@ public class MainActivity extends AppCompatActivity {
         if(freshInstall){
             sharedPreferences.edit().putBoolean("fresh", false).apply();
             Intent intent = new Intent(getApplicationContext(), AboutApp.class);
-            //intent.putExtra("fresh", "FRESH");
+            intent.putExtra("fresh", "FRESH");
             startActivity(intent);
         }
 
@@ -644,6 +644,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void click(View v) throws ParseException{
+        internetConnected = isInternetConnected();
+        if(!internetConnected){
+            alertInternet("Нема интернет конекције!");
+        }
         gotovoPopunjavanje=false;
         listaRezultata.clear();
         String [] prazna_lista = new String[]{"Обрада захтева..."};
@@ -664,9 +668,11 @@ public class MainActivity extends AppCompatActivity {
             @SuppressLint("SimpleDateFormat") DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
             Date prvi = null;
             Date zadnji = null;
+            Date praviZadnji = null;
             try {
                 prvi = df.parse(izabranPocetniDatum);
                 zadnji = df.parse(izabranKrajnjiDatum);
+                praviZadnji = zadnji;
                 Calendar c = Calendar.getInstance();
                 c.setTime(zadnji);
                 c.add(Calendar.DATE, 7);
@@ -676,7 +682,7 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
             assert prvi != null;
-            if(prvi.after(zadnji)){
+            if(prvi.after(praviZadnji)){
                 alert("Крајњи датум не може бити пре почетног!");
             }
             else{
