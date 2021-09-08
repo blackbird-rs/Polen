@@ -513,6 +513,16 @@ public class MainActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
         );
 
+        SharedPreferences sharedPreferences = this.getSharedPreferences("com.example.demo3", Context.MODE_PRIVATE);
+        //sharedPreferences.edit().clear().apply();
+        Boolean freshInstall = sharedPreferences.getBoolean("fresh", true);
+        if(freshInstall){
+            sharedPreferences.edit().putBoolean("fresh", false).apply();
+            Intent intent = new Intent(getApplicationContext(), AboutApp.class);
+            //intent.putExtra("fresh", "FRESH");
+            startActivity(intent);
+        }
+
         internetConnected = isInternetConnected();
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
