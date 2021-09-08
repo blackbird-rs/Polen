@@ -9,7 +9,12 @@ import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -52,7 +57,7 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
-    static int [] datum;
+    static int[] datum;
     @SuppressLint("StaticFieldLeak")
     static TextView pocetniDatumSelektor;
     @SuppressLint("StaticFieldLeak")
@@ -65,8 +70,8 @@ public class MainActivity extends AppCompatActivity {
     Spinner spinnerLokacija;
     Spinner spinnerAlergena;
 
-    String [] lokacije;
-    String [] alergeni;
+    String[] lokacije;
+    String[] alergeni;
 
     String urlZaLokacije = "http://polen.sepa.gov.rs/api/opendata/locations/";
     String urlZaAlergene = "http://polen.sepa.gov.rs/api/opendata/allergens/";
@@ -96,9 +101,10 @@ public class MainActivity extends AppCompatActivity {
 
     boolean popunjeneLokacije;
     boolean popunjeniAlergeni;
+    boolean internetConnected;
 
     @SuppressLint("StaticFieldLeak")
-    public class PozivZaListuLokacija extends AsyncTask <String, Void, String>{
+    public class PozivZaListuLokacija extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... strings) {
             try {
@@ -111,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 String result = "";
                 int data = reader.read();
 
-                while(data!=-1){
+                while (data != -1) {
                     char current = (char) data;
                     result += current;
                     data = reader.read();
@@ -144,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("StaticFieldLeak")
-    public class PozivZaListuAlergena extends AsyncTask <String, Void, String>{
+    public class PozivZaListuAlergena extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... strings) {
             try {
@@ -157,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
                 String result = "";
                 int data = reader.read();
 
-                while(data!=-1){
+                while (data != -1) {
                     char current = (char) data;
                     result += current;
                     data = reader.read();
@@ -190,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("StaticFieldLeak")
-    public class PozivZaIDPolena extends AsyncTask <String, Void, String>{
+    public class PozivZaIDPolena extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... strings) {
             try {
@@ -206,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
                 String result = "";
                 int data = reader.read();
 
-                while(data!=-1){
+                while (data != -1) {
                     char current = (char) data;
                     result += current;
                     data = reader.read();
@@ -221,23 +227,21 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
-            String datum = result.substring(result.length()-10, result.length());
-            result = result.substring(0, result.length()-10);
+            String datum = result.substring(result.length() - 10, result.length());
+            result = result.substring(0, result.length() - 10);
             try {
                 JSONObject jsonObject = new JSONObject(result);
                 JSONArray rezultati = jsonObject.getJSONArray("results");
-                if(rezultati.length()>0){
+                if (rezultati.length() > 0) {
                     JSONObject rezultat = rezultati.getJSONObject(0);
                     int pollenID = rezultat.getInt("id");
                     String url = urlZaPolenPT1 + izabranAlergenID + urlZaPolenPT2 + pollenID;
                     PozivZaKoncentraciju poziv = new PozivZaKoncentraciju();
                     poziv.execute(url, datum);
-                }
-                else if(rezultati.length()<=0 ){
+                } else if (rezultati.length() <= 0) {
                     String url = urlZaPolenPT1 + izabranAlergenID + urlZaPolenPT2 + 0;
                     PozivZaKoncentraciju poziv = new PozivZaKoncentraciju();
                     poziv.execute(url, datum);
@@ -249,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("StaticFieldLeak")
-    public class PozivZaKoncentraciju extends AsyncTask <String, Void, String>{
+    public class PozivZaKoncentraciju extends AsyncTask<String, Void, String> {
 
         @Override
         protected String doInBackground(String... strings) {
@@ -258,8 +262,8 @@ public class MainActivity extends AppCompatActivity {
                 String result = "";
                 String datum = strings[1];
 
-                if(strings[0].equals(prazanUrl)){
-                    result="prazanURL" + datum;
+                if (strings[0].equals(prazanUrl)) {
+                    result = "prazanURL" + datum;
                     return result;
                 }
 
@@ -271,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
 
                 int data = reader.read();
 
-                while(data!=-1){
+                while (data != -1) {
                     char current = (char) data;
                     result += current;
                     data = reader.read();
@@ -288,39 +292,35 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String result) {
             String urlProvera = result.substring(0, 9);
             String datum = result.substring(result.length() - 10);
-            if(urlProvera.equals("prazanURL")){
+            if (urlProvera.equals("prazanURL")) {
                 Rezultat rezultat;
-                if(datum.equals(krajnjiDatumZaTrend)){
+                if (datum.equals(krajnjiDatumZaTrend)) {
                     gotovoPopunjavanje = true;
                     rezultat = new Rezultat(datum, izabranAlergenIme, -1, true);
                     listaRezultata.add(rezultat);
-                }
-                else{
+                } else {
                     rezultat = new Rezultat(datum, izabranAlergenIme, -1, true);
                     listaRezultata.add(rezultat);
                 }
-            }
-            else{
-                result = result.substring(0, result.length()-10);
+            } else {
+                result = result.substring(0, result.length() - 10);
                 try {
                     JSONObject jsonObject = new JSONObject(result);
                     JSONArray rezultati = jsonObject.getJSONArray("results");
-                    int vrednost=0;
+                    int vrednost = 0;
                     boolean prazan;
                     Rezultat rezultat;
-                    if(rezultati.length() <= 0){
-                        prazan=true;
-                    }
-                    else{
+                    if (rezultati.length() <= 0) {
+                        prazan = true;
+                    } else {
                         vrednost = rezultati.getJSONObject(0).getInt("value");
-                        prazan=false;
+                        prazan = false;
                     }
-                    if(datum.equals(krajnjiDatumZaTrend)){
+                    if (datum.equals(krajnjiDatumZaTrend)) {
                         gotovoPopunjavanje = true;
                         rezultat = new Rezultat(datum, izabranAlergenIme, vrednost, prazan);
                         listaRezultata.add(rezultat);
-                    }
-                    else{
+                    } else {
                         rezultat = new Rezultat(datum, izabranAlergenIme, vrednost, prazan);
                         listaRezultata.add(rezultat);
                     }
@@ -345,7 +345,7 @@ public class MainActivity extends AppCompatActivity {
             this.prazan = prazan;
         }
 
-        public Rezultat(){
+        public Rezultat() {
 
         }
 
@@ -361,7 +361,7 @@ public class MainActivity extends AppCompatActivity {
             return value;
         }
 
-        public boolean getPrazan(){
+        public boolean getPrazan() {
             return prazan;
         }
 
@@ -377,7 +377,7 @@ public class MainActivity extends AppCompatActivity {
             this.value = value;
         }
 
-        public void setPrazan(boolean prazan){
+        public void setPrazan(boolean prazan) {
             this.prazan = prazan;
         }
     }
@@ -402,27 +402,26 @@ public class MainActivity extends AppCompatActivity {
             datum[0] = year;
             datum[1] = month;
             datum[2] = day;
-            String datum = year + "-" + String.format("%02d", month+1) + "-" + String.format("%02d", day);
-            if(selektor==1) {
+            String datum = year + "-" + String.format("%02d", month + 1) + "-" + String.format("%02d", day);
+            if (selektor == 1) {
                 pocetniDatumSelektor.setText(datum);
-            }
-            else if(selektor==2){
+            } else if (selektor == 2) {
                 krajnjiDatumSelektor.setText(datum);
             }
         }
     }
 
-    private void popuniSpinner(Spinner spinner, String[] items){
-        ArrayAdapter adapter = new ArrayAdapter(this, R.layout.spinner_item, items){
-            public View getView(int position, View convertView,ViewGroup parent) {
+    private void popuniSpinner(Spinner spinner, String[] items) {
+        ArrayAdapter adapter = new ArrayAdapter(this, R.layout.spinner_item, items) {
+            public View getView(int position, View convertView, ViewGroup parent) {
                 View v = super.getView(position, convertView, parent);
                 ((TextView) v).setGravity(Gravity.CENTER);
                 ((TextView) v).setTextSize(16);
                 return v;
             }
 
-            public View getDropDownView(int position, View convertView,ViewGroup parent) {
-                View v = super.getDropDownView(position, convertView,parent);
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View v = super.getDropDownView(position, convertView, parent);
                 ((TextView) v).setGravity(Gravity.CENTER);
                 return v;
             }
@@ -476,7 +475,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         super.onOptionsItemSelected(item);
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.about_app:
                 Intent intent = new Intent(getApplicationContext(), AboutApp.class);
                 startActivity(intent);
@@ -485,8 +484,20 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent1 = new Intent(getApplicationContext(), AboutDev.class);
                 startActivity(intent1);
                 return true;
-            default: return false;
+            default:
+                return false;
         }
+    }
+
+    public boolean isInternetConnected() {
+        boolean connected = false;
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED ||
+                connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
+            //we are connected to a network
+            connected = true;
+        }
+        return connected;
     }
 
     @Override
@@ -502,6 +513,7 @@ public class MainActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
         );
 
+        internetConnected = isInternetConnected();
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
         int month = c.get(Calendar.MONTH);
@@ -525,7 +537,7 @@ public class MainActivity extends AppCompatActivity {
         okDugme = findViewById(R.id.okButton);
         okDugme.setOnClickListener(this::click2);
 
-        prozorZaIspisListe =findViewById(R.id.prozorZaIspisListe);
+        prozorZaIspisListe = findViewById(R.id.prozorZaIspisListe);
 
         zamraciSekundarniUI();
 
@@ -543,78 +555,82 @@ public class MainActivity extends AppCompatActivity {
             selektor = 2;
         });
 
+        spinnerLokacija = findViewById(R.id.lokacije);
+        spinnerAlergena = findViewById(R.id.alergeni);
         String[] tempLok = new String[]{"АПАТИН"};
         izabranaLokacijaID = 29;
         String[] tempAlg = new String[]{"ЈАВОР"};
         izabranAlergenID = 1;
-        spinnerLokacija = findViewById(R.id.lokacije);
-        spinnerAlergena = findViewById(R.id.alergeni);
+
         popuniSpinner(spinnerLokacija, tempLok);
         popuniSpinner(spinnerAlergena, tempAlg);
 
-        PozivZaListuLokacija pozivLokacije = new PozivZaListuLokacija();
-        pozivLokacije.execute(urlZaLokacije);
+        if(!internetConnected){
+            alertInternet("Нема интернет конекције!");
+        }
+        else {
+            PozivZaListuLokacija pozivLokacije = new PozivZaListuLokacija();
+            pozivLokacije.execute(urlZaLokacije);
 
-        PozivZaListuAlergena pozivAlergena = new PozivZaListuAlergena();
-        pozivAlergena.execute(urlZaAlergene);
+            PozivZaListuAlergena pozivAlergena = new PozivZaListuAlergena();
+            pozivAlergena.execute(urlZaAlergene);
 
-        int delay = 0;
-        int period = 50;
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask()
-        {
-            public void run()
-            {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if(popunjeneLokacije == true && popunjeniAlergeni == true){
-                            spinnerLokacija.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                                @Override
-                                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                                    try {
-                                        izabranaLokacijaID = lokacijeJSON.getJSONObject(i).getInt("id");
+            int delay = 0;
+            int period = 50;
+            Timer timer = new Timer();
+            timer.scheduleAtFixedRate(new TimerTask() {
+                public void run() {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (popunjeneLokacije == true && popunjeniAlergeni == true) {
+                                spinnerLokacija.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                                    @Override
+                                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                                        try {
+                                            izabranaLokacijaID = lokacijeJSON.getJSONObject(i).getInt("id");
 
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
+                                        } catch (JSONException e) {
+                                            e.printStackTrace();
+                                        }
                                     }
-                                }
 
-                                @Override
-                                public void onNothingSelected(AdapterView<?> adapterView) {
+                                    @Override
+                                    public void onNothingSelected(AdapterView<?> adapterView) {
 
-                                }
-                            });
-                            spinnerAlergena.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                                @Override
-                                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                                    try {
-                                        izabranAlergenID = alergeniJSON.getJSONObject(i).getInt("id");
-                                        izabranAlergenIme = alergeniJSON.getJSONObject(i).getString("localized_name");
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
                                     }
-                                }
+                                });
+                                spinnerAlergena.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                                    @Override
+                                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                                        try {
+                                            izabranAlergenID = alergeniJSON.getJSONObject(i).getInt("id");
+                                            izabranAlergenIme = alergeniJSON.getJSONObject(i).getString("localized_name");
+                                        } catch (JSONException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
 
-                                @Override
-                                public void onNothingSelected(AdapterView<?> adapterView) {
+                                    @Override
+                                    public void onNothingSelected(AdapterView<?> adapterView) {
 
-                                }
-                            });
-                            timer.cancel();
+                                    }
+                                });
+                                timer.cancel();
+                            }
                         }
-                    }
-                });
-            }
-        }, delay, period);
+                    });
+                }
+            }, delay, period);
 
-        prozorZaIspisListe.setOnItemClickListener((adapterView, view, i, l) -> {
-            try {
-                click3(i);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-        });
+            prozorZaIspisListe.setOnItemClickListener((adapterView, view, i, l) -> {
+                try {
+                    click3(i);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
     }
 
     public void click(View v) throws ParseException{
@@ -756,49 +772,63 @@ public class MainActivity extends AppCompatActivity {
 
     public void zamraciGlavniUI(){
         spinnerLokacija.animate().alpha(0f).setDuration(animationDuration);
+        spinnerLokacija.setVisibility(View.GONE);
         spinnerLokacija.setEnabled(false);
 
         spinnerAlergena.animate().alpha(0f).setDuration(animationDuration);
+        spinnerAlergena.setVisibility(View.GONE);
         spinnerAlergena.setEnabled(false);
 
         pocetniDatumSelektor.animate().alpha(0f).setDuration(animationDuration);
+        pocetniDatumSelektor.setVisibility(View.GONE);
         pocetniDatumSelektor.setEnabled(false);
 
         krajnjiDatumSelektor.animate().alpha(0f).setDuration(animationDuration);
+        krajnjiDatumSelektor.setVisibility(View.GONE);
         krajnjiDatumSelektor.setEnabled(false);
 
         goDugme.animate().alpha(0f).setDuration(animationDuration);
+        goDugme.setVisibility(View.GONE);
         goDugme.setEnabled(false);
     }
 
     public void prikaziGlavniUI(){
         spinnerLokacija.animate().alpha(1f).setDuration(animationDuration);
+        spinnerLokacija.setVisibility(View.VISIBLE);
         spinnerLokacija.setEnabled(true);
 
         spinnerAlergena.animate().alpha(1f).setDuration(animationDuration);
+        spinnerAlergena.setVisibility(View.VISIBLE);
         spinnerAlergena.setEnabled(true);
 
         pocetniDatumSelektor.animate().alpha(1f).setDuration(animationDuration);
+        pocetniDatumSelektor.setVisibility(View.VISIBLE);
         pocetniDatumSelektor.setEnabled(true);
 
         krajnjiDatumSelektor.animate().alpha(1f).setDuration(animationDuration);
+        krajnjiDatumSelektor.setVisibility(View.VISIBLE);
         krajnjiDatumSelektor.setEnabled(true);
 
         goDugme.animate().alpha(1f).setDuration(animationDuration);
+        goDugme.setVisibility(View.VISIBLE);
         goDugme.setEnabled(true);
     }
 
     public void zamraciSekundarniUI(){
         okDugme.animate().alpha(0f).setDuration(animationDuration);
+        okDugme.setVisibility(View.GONE);
         okDugme.setEnabled(false);
 
         prozorZaIspisListe.animate().alpha(0f).setDuration(animationDuration);
+        prozorZaIspisListe.setVisibility(View.GONE);
         prozorZaIspisListe.setEnabled(false);
     }
 
     public void prikaziSekundarniUI(){
         okDugme.animate().alpha(1f).setDuration(animationDuration);
+        okDugme.setVisibility(View.VISIBLE);
         prozorZaIspisListe.animate().alpha(1f).setDuration(animationDuration);
+        prozorZaIspisListe.setVisibility(View.VISIBLE);
     }
 
     public void osposobiSekundarniUI(){
@@ -810,6 +840,18 @@ public class MainActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setMessage(poruka)
                 .setPositiveButton("OK", null)
+                .show();
+    }
+
+    public void alertInternet(String poruka){
+        new AlertDialog.Builder(this)
+                .setMessage(poruka)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        finish();
+                    }
+                })
                 .show();
     }
 }
