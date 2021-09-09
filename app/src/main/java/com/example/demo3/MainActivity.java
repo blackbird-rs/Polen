@@ -575,6 +575,7 @@ public class MainActivity extends AppCompatActivity {
         String[] tempLok = new String[]{"АПАТИН"};
         izabranaLokacijaID = 29;
         String[] tempAlg = new String[]{"ЈАВОР"};
+        izabranAlergenIme = "ЈАВОР";
         izabranAlergenID = 1;
 
         popuniSpinner(spinnerLokacija, tempLok);
