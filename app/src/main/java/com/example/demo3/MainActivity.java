@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
     String izabranAlergenIme;
     String izabranPocetniDatum;
     String izabranKrajnjiDatum;
+    static String [] meseci;
 
     String rezultat = "";
     String[] rezultatiZaStampu;
@@ -403,6 +404,7 @@ public class MainActivity extends AppCompatActivity {
             datum[1] = month;
             datum[2] = day;
             String datum = year + "-" + String.format("%02d", month + 1) + "-" + String.format("%02d", day);
+            datum = domaciDatum(datum);
             if (selektor == 1) {
                 pocetniDatumSelektor.setText(datum);
             } else if (selektor == 2) {
@@ -523,6 +525,7 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         }
 
+        meseci = new String[] {"темп", "Јануар", "Фебруар", "Март", "Април", "Мај", "Јун", "Јул", "Август", "Септембар", "Октобар", "Новембар", "Децембар"};
         internetConnected = isInternetConnected();
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
@@ -531,6 +534,8 @@ public class MainActivity extends AppCompatActivity {
         datum = new int[]{year, month, day};
         listaRezultata = new ArrayList<Rezultat>();
         listaRezultataZaTrend = new ArrayList<Rezultat>();
+
+        Log.d("TAG", formatirajDatumZaPoziv("01. Септембар 2021."));
 
         popunjeneLokacije = false;
         popunjeniAlergeni = false;
@@ -653,8 +658,8 @@ public class MainActivity extends AppCompatActivity {
         String [] prazna_lista = new String[]{"Обрада захтева..."};
         ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, prazna_lista);
         prozorZaIspisListe.setAdapter(adapter);
-        izabranPocetniDatum = pocetniDatumSelektor.getText().toString();
-        izabranKrajnjiDatum = krajnjiDatumSelektor.getText().toString();
+        izabranPocetniDatum = formatirajDatumZaPoziv(pocetniDatumSelektor.getText().toString());
+        izabranKrajnjiDatum = formatirajDatumZaPoziv(krajnjiDatumSelektor.getText().toString());
         if(izabranPocetniDatum.equals("ПОЧЕТНИ ДАТУМ") && izabranKrajnjiDatum.equals("КРАЈЊИ ДАТУМ")){
             alert("Изаберите датуме за претрагу!");
         }
@@ -759,16 +764,20 @@ public class MainActivity extends AppCompatActivity {
     public void stampa(){
         rezultat = "";
         for (int i = 0; i < listaRezultata.size(); i++) {
+            String datumZaStampu;
             Rezultat result = listaRezultata.get(i);
             if(result.getValue() == -1){
-                rezultat += (result.getDatum() + " За дати датум и локацију не постоје очитавања \n");
+                datumZaStampu = domaciDatum(result.getDatum());
+                rezultat += (datumZaStampu + " За дати датум и локацију не постоје очитавања \n");
             }
             else{
                 if(result.getPrazan()){
-                    rezultat += ("На дан " + result.getDatum() + " не постоји податак за дати алерген \n");
+                    datumZaStampu = domaciDatum(result.getDatum());
+                    rezultat += ("На дан " + datumZaStampu + " не постоји податак за дати алерген \n");
                 }
                 else{
-                    rezultat += ("Концентрација алергена " + result.getAlergen() + " на дан " + result.getDatum() + " износи " + result.getValue() + "\n");
+                    datumZaStampu = domaciDatum(result.getDatum());
+                    rezultat += ("Концентрација алергена " + result.getAlergen() + " на дан " + datumZaStampu + " износи " + result.getValue() + "\n");
                 }
             }
         }
@@ -869,5 +878,28 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .show();
+    }
+
+    public static String domaciDatum(String initialDatum){
+        String godina = initialDatum.substring(0, 4);
+        String mesec = initialDatum.substring(6, 7);
+        int mesecID = Integer.parseInt(mesec);
+        mesec = meseci[mesecID];
+        String dan = initialDatum.substring(8,10);
+        String returnDatum = dan + ". " + mesec + " " + godina + ".";
+        return returnDatum;
+    }
+
+    public static String formatirajDatumZaPoziv(String initialDatum){
+        String dan = initialDatum.substring(0, 2);
+        String godina = initialDatum.substring(initialDatum.length()-5, initialDatum.length()-1);
+        String mesec = initialDatum.substring(4, initialDatum.length()-6);
+        for (int i = 0; i < meseci.length; i++) {
+            if(mesec.equals(meseci[i])){
+                mesec = String.format("%02d", i);
+            }
+        }
+        String returnDatum = godina + "-" + mesec + "-" + dan;
+        return returnDatum;
     }
 }
